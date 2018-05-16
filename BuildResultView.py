@@ -18,8 +18,6 @@ class BuildResultView(sublime_plugin.EventListener):
         self.orig_group = window.active_group()
         self.orig_view = window.active_view()
 
-        sublime.set_timeout(self.move_out_view, 20)
-
         if self.out_view == None or -1 in window.get_view_index(self.out_view):
             def create_view():
                 self.out_view = window.new_file()
@@ -30,15 +28,20 @@ class BuildResultView(sublime_plugin.EventListener):
                     self.out_view.run_command("overwrite_view", {'content': self.buffer})
                     self.buffer = ""
 
+                self.move_out_view()
+
             sublime.set_timeout(create_view, 10)
         else:
             self.out_view.run_command("overwrite_view", {'content': ""})
+            sublime.set_timeout(self.move_out_view, 10)
 
         self.in_view = window.find_output_panel("exec")
         if self.in_view == None and self.out_view != None:
             self.out_view.run_command("overwrite_view", {'content': "Not ready, try again"})
 
     def move_out_view(self):
+        if self.orig_view.id() == self.out_view.id(): return
+
         window = self.out_view.window()
         window.focus_view(self.out_view)
 
