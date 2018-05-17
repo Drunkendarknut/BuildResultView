@@ -19,13 +19,12 @@ class BuildResultView(sublime_plugin.EventListener):
         self.orig_view = window.active_view()
 
         if self.out_view == None or -1 in window.get_view_index(self.out_view):
-            def create_view():
+            def create_out_view():
                 self.out_view = window.new_file()
                 self.out_view.set_name("Build result")
                 self.out_view.set_scratch(True)
-                self.out_view.settings().set("line_numbers", False)
-                self.out_view.settings().set("gutter", False)
-                self.out_view.settings().set("scroll_past_end", False)
+                self.out_view.set_read_only(True)
+                self.try_copy_settings()
 
                 if len(self.buffer) > 0:
                     self.out_view.run_command("overwrite_view", {'content': self.buffer})
@@ -33,16 +32,28 @@ class BuildResultView(sublime_plugin.EventListener):
 
                 self.move_out_view()
 
-            sublime.set_timeout(create_view, 10)
+            sublime.set_timeout(create_out_view, 10)
         else:
             self.out_view.run_command("overwrite_view", {'content': ""})
             sublime.set_timeout(self.move_out_view, 10)
 
         def get_in_view():
             self.in_view = window.find_output_panel("exec")
-            if self.in_view == None and self.out_view != None:
-                self.out_view.run_command("overwrite_view", {'content': "Not ready, try again"})
+            self.try_copy_settings()
         sublime.set_timeout(get_in_view, 1)
+
+    def try_copy_settings(self):
+        if self.out_view != None and self.in_view != None:
+            in_settings = self.in_view.settings()
+            for key in ["result_file_regex",
+                        "result_line_regex",
+                        "result_base_dir",
+                        "word_wrap",
+                        "line_numbers",
+                        "gutter",
+                        "scroll_past_end"]:
+                self.out_view.settings().set(key, in_settings.get(key))
+            self.out_view.assign_syntax(in_settings.get("syntax"))
 
     def move_out_view(self):
         if self.orig_view.id() == self.out_view.id(): return
@@ -76,8 +87,12 @@ class BuildResultView(sublime_plugin.EventListener):
 
 class WriteView(sublime_plugin.TextCommand):
     def run(self, edit, content, begin, end):
+        self.view.set_read_only(False)
         self.view.replace(edit, sublime.Region(begin, end), content)
+        self.view.set_read_only(True)
 
 class OverwriteView(sublime_plugin.TextCommand):
     def run(self, edit, content):
+        self.view.set_read_only(False)
         self.view.replace(edit, sublime.Region(0, self.view.size()), content)
+        self.view.set_read_only(True)
