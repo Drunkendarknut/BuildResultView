@@ -23,6 +23,9 @@ class BuildResultView(sublime_plugin.EventListener):
                 self.out_view = window.new_file()
                 self.out_view.set_name("Build result")
                 self.out_view.set_scratch(True)
+                self.out_view.settings().set("line_numbers", False)
+                self.out_view.settings().set("gutter", False)
+                self.out_view.settings().set("scroll_past_end", False)
 
                 if len(self.buffer) > 0:
                     self.out_view.run_command("overwrite_view", {'content': self.buffer})
@@ -35,9 +38,11 @@ class BuildResultView(sublime_plugin.EventListener):
             self.out_view.run_command("overwrite_view", {'content': ""})
             sublime.set_timeout(self.move_out_view, 10)
 
-        self.in_view = window.find_output_panel("exec")
-        if self.in_view == None and self.out_view != None:
-            self.out_view.run_command("overwrite_view", {'content': "Not ready, try again"})
+        def get_in_view():
+            self.in_view = window.find_output_panel("exec")
+            if self.in_view == None and self.out_view != None:
+                self.out_view.run_command("overwrite_view", {'content': "Not ready, try again"})
+        sublime.set_timeout(get_in_view, 1)
 
     def move_out_view(self):
         if self.orig_view.id() == self.out_view.id(): return
