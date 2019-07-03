@@ -90,9 +90,11 @@ class WriteView(sublime_plugin.TextCommand):
         self.view.set_read_only(False)
         self.view.replace(edit, sublime.Region(begin, end), content)
         self.view.set_read_only(True)
+        self.view.show(end)
 
 class OverwriteView(sublime_plugin.TextCommand):
     def run(self, edit, content):
         self.view.set_read_only(False)
         self.view.replace(edit, sublime.Region(0, self.view.size()), content)
         self.view.set_read_only(True)
+        self.view.show(self.view.size())
